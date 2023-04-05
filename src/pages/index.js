@@ -21,9 +21,12 @@ export default function Home() {
   const { currentUser } = useAuth()
   const router = useRouter()
 
+  const [driver, setDriver] = useState()
+
   const [pickupLoc, setPickupLoc] = useState('')
   const [destinationLoc, setDestinationLoc] = useState('')
 
+  const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
   const [myRide, setMyRide] = useState()
 
   function TabChange(index) {
@@ -46,115 +49,46 @@ export default function Home() {
     })
   }
 
-  const registerRide = async () => {
-    const { data, error } = await supabase.from('rides').insert({pickup_loc: pickupLoc, drop_loc: destinationLoc, fare: 10, driver_id: '6e6ba6ad-76aa-4192-8a50-f3c113eb8d6e'}).select().maybeSingle()
+  const getDriverDetails = async () => {
+    const { error, data } = await supabase.from('profile_driver').select().eq('username', currentUser.user_metadata.username.toLowerCase()).maybeSingle()
+    console.log(data)
     return data
   }
 
-  const BookRide = async () => {
-    registerRide().then((e) => setMyRide(e))
-  }
+  useEffect(() => {
+    currentUser && getDriverDetails().then((e) => setDriver(e))
+  }, [currentUser])
+  
 
   useEffect(() => {
-    TabChange(0)
-  }, [])
+    const sub = supabase.channel('any')
+      .on('postgres_changes', driver ? { event: 'INSERT', schema: 'public', table: 'rides', filter: `driver_id=eq.${driver.id}` } : { event: 'INSERT', schema: 'public', table: 'rides' }, payload => {
+        console.log('Change received!', payload)
+        watchForRealtimeChanges && toast({
+          title: `New ride - ${driver && driver.id}`,
+          description: `from (${payload.new.pickup_loc}) - (${payload.new.drop_loc}) for ${payload.new.fare}Rs`,
+          status: 'info',
+          duration: 10000,
+          isClosable: false,
+          position: 'bottom-right',
+        })
+        // chats.includes(payload.new) && console.log('i already have', payload.new)
+        // console.log(chats)
+        // setChats((current) => [...current, payload.new])
+        // setChats((current) => current.includes(payload.new) ? current : [...current, payload.new])
+      }).subscribe()
+    return () => {
+      supabase.removeChannel(sub)
+    }
+  }, [watchForRealtimeChanges])
+  
 
   useEffect(() => {
     myRide && console.log('Got ride', myRide)
   }, [myRide])
-  
 
   return (
     <Box>
-      <Tabs onChange={(index) => TabChange(index)} defaultIndex={0}>
-        <TabList>
-          <Tab height={24} width={24} _selected={{ color: 'black', bg: 'blackAlpha.200', borderBottomColor: 'black' }}>
-            <Center>
-              <Flex boxSize={'full'} alignItems={'center'} flexDirection='column'>
-                <AiFillCar size={'22'} />
-                <Text pt={1.5}>Ride</Text>
-              </Flex>
-            </Center>
-          </Tab>
-          <Tab height={24} width={24} _selected={{ color: 'black', bg: 'blackAlpha.200', borderBottomColor: 'black' }}>
-            <Center>
-              <Flex boxSize={'full'} alignItems={'center'} flexDirection='column'>
-                <FiPackage size={'22'} />
-                <Text pt={1.5}>Deliver</Text>
-              </Flex>
-            </Center>
-          </Tab>
-          <Tab height={24} width={24} _selected={{ color: 'black', bg: 'blackAlpha.200', borderBottomColor: 'black' }}>
-            <Center>
-              <Flex boxSize={'full'} alignItems={'center'} flexDirection='column'>
-                <GiCarWheel size={'22'} />
-                <Text pt={1.5}>Rent</Text>
-              </Flex>
-            </Center>
-          </Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel>
-            <Flex direction={'column'}>
-              <Text fontSize={'3xl'} as='b'>Request a ride now</Text>
-              <Box py={8}>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  <InputLeftElement pointerEvents='none' children={<TbLocationFilled color='gray.300' />} />
-                  <Input variant='filled' background={'#F6F6F6'} placeholder='Enter Pickup Location' onChange={(e) => {setPickupLoc(e.target.value);}} />
-                </InputGroup>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  <InputLeftElement pointerEvents='none' children={<HiLocationMarker color='gray.300' />} />
-                  <Input variant='filled' background={'#F6F6F6'} placeholder='Enter Destination' onChange={(e) => {setDestinationLoc(e.target.value);}} />
-                </InputGroup>
-              </Box>
-              <VStack spacing={2}>
-                <Button width={'full'} variant='primary' onClick={BookRide}>Request now</Button>
-                <Button width={'full'} variant='secondary'>Schedule for later</Button>
-                <Button size={'sm'} rounded='full' variant='primary' _hover={{ bg: "whiteAlpha.400" }} onClick={() => router.replace('/map')}>Test Our Map</Button>
-              </VStack>
-            </Flex>
-          </TabPanel>
-          <TabPanel>
-            <Flex direction={'column'}>
-              <Text fontSize={'3xl'} as='b'>Request a ride now</Text>
-              <Box py={8}>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  <InputLeftElement pointerEvents='none' children={<FiPackage color='gray.300' />} />
-                  <Input variant='filled' placeholder='Enter Pickup Location' />
-                </InputGroup>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  {/* <InputLeftElement pointerEvents='none' children={<FaTruckLoading color='gray.300' style={{'-webkit-transform': 'scaleX(-1)', transform: 'scaleX(-1)'}} />} /> */}
-                  <InputLeftElement pointerEvents='none' children={<RiTruckFill color='gray.300' />} />
-                  <Input variant='filled' placeholder='Enter Destination' />
-                </InputGroup>
-              </Box>
-              <VStack spacing={2}>
-                <Button width={'full'} variant='primary'>Request now</Button>
-                <Button width={'full'} variant='secondary'>Schedule for later</Button>
-              </VStack>
-            </Flex>
-          </TabPanel>
-          <TabPanel>
-            <Flex direction={'column'}>
-              <Text fontSize={'3xl'} as='b'>Request a ride now</Text>
-              <Box py={8}>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  <InputLeftElement pointerEvents='none' children={<TbLocationFilled color='gray.300' />} />
-                  <Input variant='filled' placeholder='Enter Pickup Location' />
-                </InputGroup>
-                <InputGroup position={'relative'} size={'lg'} my={2} border={'none'}>
-                  <InputLeftElement pointerEvents='none' children={<HiLocationMarker color='gray.300' />} />
-                  <Input variant='filled' placeholder='Enter Destination' />
-                </InputGroup>
-              </Box>
-              <VStack spacing={2}>
-                <Button width={'full'} variant='primary'>Request now</Button>
-                <Button width={'full'} variant='secondary'>Schedule for later</Button>
-              </VStack>
-            </Flex>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
       <chakra.pre p={4}>
         {myRide && <pre>{JSON.stringify(myRide, null, 2)}</pre>}
       </chakra.pre>
