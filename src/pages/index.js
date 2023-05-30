@@ -58,7 +58,22 @@ export default function Home() {
   useEffect(() => {
     currentUser && getDriverDetails().then((e) => setDriver(e))
   }, [currentUser])
-  
+
+  useEffect(() => {
+    const pingDriver = async () => {
+      if (driver) {
+        const { error, data } = await supabase.from('online_driver').select().eq('id', driver.id).maybeSingle()
+        if (data) {
+          console.log('datamila')
+          // ping it ( update last_ping_at )
+        } else {
+          const { data, error } = await supabase.from('online_driver').insert({ id: driver.id})
+        }
+        // console.log(driver?.id)
+      }
+    }
+    pingDriver()
+  }, [driver])
 
   useEffect(() => {
     const sub = supabase.channel('any')
