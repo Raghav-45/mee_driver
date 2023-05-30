@@ -75,10 +75,32 @@ export default function Home() {
     pingDriver()
   }, [driver])
 
+  const AcceptRide = async (payload) => {
+    const { data, error } = await supabase.from('waiting_rides').update({ is_accepted: true })
+                                                                .match({id: payload.new.id,
+                                                                        person_id: payload.new.person_id,
+                                                                        driver_id: payload.new.driver_id,
+                                                                        booked_at: payload.new.booked_at,
+                                                                        started_at: payload.new.started_at,
+                                                                        leave_at: payload.new.leave_at,
+                                                                        fare: payload.new.fare,
+                                                                        pickup_loc: payload.new.pickup_loc,
+                                                                        drop_loc: payload.new.drop_loc})
+    console.log('gg', data, error, payload)
+  }
+
   useEffect(() => {
     const sub = supabase.channel('any')
-      .on('postgres_changes', driver ? { event: 'INSERT', schema: 'public', table: 'rides', filter: `driver_id=eq.${driver.id}` } : { event: 'INSERT', schema: 'public', table: 'rides' }, payload => {
+      .on('postgres_changes', driver ? { event: 'INSERT', schema: 'public', table: 'waiting_rides', filter: `driver_id=eq.${driver.id}` } : { event: 'INSERT', schema: 'public', table: 'rides' }, payload => {
         console.log('Change received!', payload)
+
+        if (payload.new.is_accepted != true) {
+          console.log('i can get this ride', payload)
+
+          // do necessary things
+          AcceptRide(payload)
+        }
+
         watchForRealtimeChanges && toast({
           title: `New ride - ${driver && driver.id}`,
           description: `from (${payload.new.pickup_loc}) - (${payload.new.drop_loc}) for ${payload.new.fare}Rs`,
