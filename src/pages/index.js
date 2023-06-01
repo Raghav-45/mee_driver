@@ -118,21 +118,21 @@ export default function Home() {
     pingDriver()
   }, [driver])
 
-  useEffect(() => {
-    if (rideQueue.length > 0) {
-      const e = rideQueue[rideQueue.length - 1]
-      console.log(e)
-      toast({
-        title: 'New Ride',
-        // description: `from (${e.pickup_loc}) - (${e.drop_loc}) for ${e.fare}Rs`,
-        description: `${e.fare} Rs`,
-        status: 'info',
-        duration: 10000,
-        isClosable: false,
-        position: 'bottom-right',
-      })
-    }
-  }, [rideQueue])
+  // useEffect(() => {
+  //   if (rideQueue.length > 0) {
+  //     const e = rideQueue[rideQueue.length - 1]
+  //     console.log(e)
+  //     toast({
+  //       title: 'New Ride',
+  //       // description: `from (${e.pickup_loc}) - (${e.drop_loc}) for ${e.fare}Rs`,
+  //       description: `${e.fare} Rs`,
+  //       status: 'info',
+  //       duration: 10000,
+  //       isClosable: false,
+  //       position: 'bottom-right',
+  //     })
+  //   }
+  // }, [rideQueue])
   
 
   const AcceptRide = async (payload) => {
@@ -149,33 +149,48 @@ export default function Home() {
     // console.log('gg', data, error, payload)
   }
 
+  // useEffect(() => {
+  //   setRideQueue_Inserted(current => [...current].filter(a => a.id != true))
+  //   // setRideQueue_Updated(current => [...current].filter(a => a.id == true))
+  // }, [rideQueue_Updated])
+
+  const updateRideIsAccepted = (updatedRide) => {
+    setRideQueue(prevRides => {
+      return prevRides.map(ride => {
+        if (ride.id === updatedRide.id) {
+          return { ...ride, is_accepted: true }
+        }
+        return ride
+      })
+    })
+  }
+
+  useEffect(() => {
+    if (rideQueue.length > 0) {
+      const e = rideQueue[rideQueue.length - 1]
+      calculateRoute(e.pickup_loc, e.drop_loc)
+    }
+  }, [rideQueue])
+  
+
   useEffect(() => {
     const sub = supabase.channel('any')
-      .on('postgres_changes', driver ? { event: 'INSERT', schema: 'public', table: 'waiting_rides', filter: `driver_id=eq.${driver.id}` } : { event: 'INSERT', schema: 'public', table: 'waiting_rides' }, payload => {
-        console.log('Change received!', payload)
+      .on('postgres_changes', driver ? { event: '*', schema: 'public', table: 'waiting_rides', filter: `driver_id=eq.${driver.id}` } : { event: '*', schema: 'public', table: 'waiting_rides' }, payload => {
+        // console.log('Change received!', payload)
 
-        if (payload.new.is_accepted != true) {
-          console.log('i can get this ride', payload)
-
-          // do necessary things
-          // AcceptRide(payload)
-          calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
+        if (payload.eventType == 'INSERT') {
+          setRideQueue(current => [...current, payload.new])
+        }
+        if (payload.eventType == 'UPDATE') {
+          updateRideIsAccepted(payload.new)
         }
 
-        // watchForRealtimeChanges && toast({
-        //   title: `New ride - ${driver && driver.id}`,
-        //   description: `from (${payload.new.pickup_loc}) - (${payload.new.drop_loc}) for ${payload.new.fare}Rs`,
-        //   status: 'info',
-        //   duration: 10000,
-        //   isClosable: false,
-        //   position: 'bottom-right',
-        // })
+        // if (payload.new.is_accepted != true) {
+        //   console.log('i can get this ride', payload)
+        //   calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
+        // }
 
-        watchForRealtimeChanges && setRideQueue(current => [...current, payload.new])
-        // chats.includes(payload.new) && console.log('i already have', payload.new)
-        // console.log(chats)
-        // setChats((current) => [...current, payload.new])
-        // setChats((current) => current.includes(payload.new) ? current : [...current, payload.new])
+        // watchForRealtimeChanges && setRideQueue(current => [...current, payload.new])
       }).subscribe()
     return () => {
       supabase.removeChannel(sub)
@@ -205,11 +220,18 @@ export default function Home() {
 
         <SimpleGrid height={'100%'} columns={2} spacing={4}>
           {rideQueue.map((elem) => 
-            <AspectRatio key={elem.id} ratio={1 / 1}><Button onClick={() => {AcceptRide(elem).then(toast({title: 'New Ride', status: 'success', duration: 10000, isClosable: false, position: 'bottom-right'}))}} rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'}></Button></AspectRatio>
+            <AspectRatio key={elem.id} ratio={1 / 1}>
+              <Button rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'} textColor={'white'} size={'sm'} onClick={() => {AcceptRide(elem).then(toast({title: 'New Ride', status: 'success', duration: 10000, isClosable: false, position: 'bottom-right'}))}}>
+                {elem.id}
+              </Button>
+            </AspectRatio>
           )}
 
           {[...Array(4 - rideQueue.length).keys()].map((elem) => 
-            <AspectRatio key={elem} ratio={1 / 1}><Button rounded={'xl'} bg={'gray.300'} colorScheme='blackAlpha'></Button></AspectRatio>
+            <AspectRatio key={elem} ratio={1 / 1}>
+              <Button rounded={'xl'} bg={'gray.400'} colorScheme='blackAlpha' textColor={'gray.900'} size={'sm'} loadingText='Waiting for Rides' isLoading >
+              </Button>
+            </AspectRatio>
           )}
         </SimpleGrid>
       </Box>
