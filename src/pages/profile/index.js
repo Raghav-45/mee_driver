@@ -1,5 +1,6 @@
 import { Avatar, Badge, Box, Button, chakra, Container, Flex, Heading, HStack, Text, VStack } from '@chakra-ui/react'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { supabase } from '../../../lib/supabaseClient'
 import { Icon } from '@chakra-ui/react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { FiPlus, FiMinus } from 'react-icons/fi'
@@ -18,7 +19,20 @@ export default function Profilepage() {
     {from: 'raghav', to: 'kunal', amount: '20', timestamp: '5:05'},
   ]
 
-  const [Transactions, setTransactions] = useState(Transactions_t)
+  const [transactions, setTransactions] = useState([])
+
+  const getTransactions = async () => {
+    const { data, error } = await supabase.from('transactions').select('*')
+    return data
+  }
+
+  useEffect(() => {
+    currentUser && getTransactions().then(e => {setTransactions(e); console.log(e);})
+  }, [currentUser])
+
+  if (!currentUser) {
+    return <Box>Loading...</Box>
+  }
 
   return (
     <Container maxW='container.lg' overflowX='auto' py={4}>
@@ -40,21 +54,21 @@ export default function Profilepage() {
 
       <Box px={4} py={4} bg={'gray.100'} rounded={'2xl'}>
         <VStack alignItems={'left'} spacing={2}>
-          {Transactions.map((elem) =>
+          {transactions.map((elem) =>
             <Flex key={elem.timestamp}>
-              {elem.to == 'raghav' ?
+              {elem.receiver == currentUser.id ?
                 <Avatar bg='blue.500' icon={<Icon mt={'-5px'} fontSize='1.25rem' as={BsBoxArrowInDown} />} />
                 :
                 <Avatar bg='red.500' icon={<Icon mt={'-5px'} fontSize='1.25rem' as={BsBoxArrowUp} />} />
               }
               <Box ml='3'>
                 <Text fontWeight='bold'>
-                  {elem.to == 'raghav' ?
+                  {elem.receiver == currentUser.id ?
                     <Badge mr='1' colorScheme='blue'>Received</Badge>
                     :
                     <Badge mr='1' colorScheme='red'>Sent</Badge>
                   }
-                  {elem.to == 'raghav' ? 'from' : 'to'} {elem.to == 'raghav' ? elem.from : elem.to}
+                  {elem.receiver == currentUser.id ? 'from' : 'to'} {elem.receiver == currentUser.id ? elem.sender : elem.receiver}
 
                   {/* <Badge mr='1' colorScheme='red'>Sent</Badge>
                   to Raghav */}
