@@ -10,6 +10,7 @@ import {
   Spacer,
 } from '@chakra-ui/react'
 import { HiMenuAlt4, HiPlus } from 'react-icons/hi'
+import { BsFillFilePersonFill } from 'react-icons/bs'
 import { Logo } from './BigLogo'
 import { useRouter } from 'next/router'
 import { useAuth } from '../contexts/AuthContext'
@@ -32,6 +33,17 @@ export const Navbar = () => {
                 {!currentUser && <Button size={'sm'} rounded='full' variant='secondary' _hover={{ bg: "whiteAlpha.800" }} onClick={() => router.replace('/register')}>Sign up</Button>}
                 {currentUser && <Button size={'sm'} rounded='full' variant='secondary' _hover={{ bg: "whiteAlpha.800" }} onClick={() => logout()}>Logout</Button>}
               </HStack>
+              {currentUser && <IconButton
+                ml={2}
+                variant="ghost"
+                textColor='white'
+                rounded='full'
+                size={'sm'}
+                onClick={() => router.replace('/profile')}
+                _hover={{ bg: "whiteAlpha.400" }}
+                icon={<BsFillFilePersonFill fontSize="1.25rem" />}
+                aria-label="Profile"
+              />}
               <IconButton
                 ml={0.5}
                 variant="ghost"
