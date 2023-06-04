@@ -22,7 +22,10 @@ export default function Profilepage() {
   const [transactions, setTransactions] = useState([])
 
   const getTransactions = async () => {
-    const { data, error } = await supabase.from('transactions').select('*').eq('receiver', currentUser.id)
+    // const { data, error } = await supabase.from('transactions').select('*').eq('receiver', currentUser.id)
+    const { data, error } = await supabase.from('transactions')
+                                          .select('*')
+                                          .or(`receiver.eq.${currentUser.id}, sender.eq.${currentUser.id}`)
     return data
   }
 
