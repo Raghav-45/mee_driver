@@ -19,7 +19,25 @@ export default function Profilepage() {
     {from: 'raghav', to: 'kunal', amount: '20', timestamp: '5:05'},
   ]
 
+  const [userWallet, setUserWallet] = useState()
   const [transactions, setTransactions] = useState([])
+
+  const getUserProfile = async () => {
+    const { data, error } = await supabase.from('profiles')
+                                          .select()
+                                          .eq('id', currentUser.id)
+                                          .single()
+    return data
+  }
+
+  const getUserWallet = async () => {
+    const user = await getUserProfile()
+    const { data, error } = await supabase.from('wallets')
+                                          .select('balance')
+                                          .eq('id', user.wallet_id)
+                                          .single()
+    return data
+  }
 
   const getTransactions = async () => {
     // const { data, error } = await supabase.from('transactions').select('*').eq('receiver', currentUser.id)
@@ -30,6 +48,7 @@ export default function Profilepage() {
   }
 
   useEffect(() => {
+    currentUser && getUserWallet().then(e => {setUserWallet(e)})
     currentUser && getTransactions().then(e => {setTransactions(e); console.log(e);})
   }, [currentUser])
 
@@ -45,7 +64,7 @@ export default function Profilepage() {
 
       <Box pt={5} textAlign={'center'}>
         <Text fontSize={'xl'}>Available Balance</Text>
-        <Heading as='h2' size='2xl' style={{wordSpacing: '-5px'}}>Rs. {1000}</Heading>
+        <Heading as='h2' size='2xl' style={{wordSpacing: '-5px'}}>Rs. {userWallet?.balance}</Heading>
       </Box>
       <HStack pt={2} spacing={4} justifyContent={'center'}>
         <Button size={'sm'} rounded='full' variant='primary'>Send</Button>
