@@ -32,11 +32,15 @@ export default function Profilepage() {
 
   const getUserWallet = async () => {
     const user = await getUserProfile()
-    const { data, error } = await supabase.from('wallets')
-                                          .select('balance')
-                                          .eq('id', user.wallet_id)
-                                          .single()
-    return data
+    if (user.wallet_id == null) {
+      return {balance: null}
+    } else {
+      const { data, error } = await supabase.from('wallets')
+                                            .select('balance')
+                                            .eq('id', user.wallet_id)
+                                            .single()
+      return data
+    }
   }
 
   const getTransactions = async () => {
@@ -64,7 +68,7 @@ export default function Profilepage() {
 
       <Box pt={5} textAlign={'center'}>
         <Text fontSize={'xl'}>Available Balance</Text>
-        <Heading as='h2' size='2xl' style={{wordSpacing: '-5px'}}>Rs. {userWallet?.balance}</Heading>
+        <Heading as='h2' size='2xl' style={{wordSpacing: '-5px'}}>Rs. {userWallet?.balance == null ? 0 : userWallet.balance}</Heading>
       </Box>
       <HStack pt={2} spacing={4} justifyContent={'center'}>
         <Button size={'sm'} rounded='full' variant='primary'>Send</Button>
