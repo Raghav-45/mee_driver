@@ -1,10 +1,22 @@
-import { Avatar, Badge, Box, Button, chakra, Container, Flex, Heading, HStack, Text, VStack } from '@chakra-ui/react'
+import { Avatar, Badge, Box, Button, chakra, Container, Flex, FormLabel, Heading, HStack, Input, SimpleGrid, Text, useToast, VStack } from '@chakra-ui/react'
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 import { Icon } from '@chakra-ui/react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { FiPlus, FiMinus } from 'react-icons/fi'
 import { BsBoxArrowUp, BsBoxArrowInDown } from 'react-icons/bs'
+import QRCode from 'react-qr-code'
+
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+} from '@chakra-ui/react'
 
 export default function Profilepage() {
   const { currentUser } = useAuth()
@@ -28,6 +40,109 @@ export default function Profilepage() {
                                           .eq('id', currentUser.id)
                                           .single()
     return data
+  }
+
+  const SendMoneyModal = () => {
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const btnRef = React.useRef(null)
+    const [whoToSend, setWhoToSend] = useState('')
+    const [amount, setAmount] = useState(0)
+
+    const toast = useToast()
+
+    const handleSend = async () => {
+      // Check if user exists or not then send Money to that user
+
+      const { data, error } = await supabase.from('transactions')
+                                            .insert({ sender: currentUser.id, receiver: whoToSend, amount: amount })
+      console.log(data)
+      if (!error) {
+        toast({
+          // title: 'Success',
+          description: `${amount} Rupees sent successfully`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        })
+        onClose()
+      }
+      return data
+    }
+    return (
+      <>
+        <Button size={'sm'} rounded='full' variant='primary' ref={btnRef} onClick={onOpen}>Send</Button>
+        <Modal
+          onClose={onClose}
+          finalFocusRef={btnRef}
+          isOpen={isOpen}
+          scrollBehavior={'inside'}
+          size={'xs'}
+          motionPreset='slideInBottom'
+          isCentered
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Send Money</ModalHeader>
+            {/* <ModalCloseButton /> */}
+            <ModalBody>
+              {/* <FormLabel>Address</FormLabel> */}
+              {/* <Input value={whoToSend} onChange={(e) => setWhoToSend(e.target.value)} placeholder='UUID' /> */}
+
+              <HStack>
+                <Input w={'75%'} value={whoToSend} onChange={(e) => setWhoToSend(e.target.value)} placeholder='UUID' />
+                <Input w={'25%'} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder='Amount' />
+              </HStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button w={'full'} mr={3} onClick={onClose}>Cancel</Button>
+              <Button w={'full'} colorScheme='blue' onClick={handleSend}>Send</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
+    )
+  }
+
+  const ReceiveMoneyModal = () => {
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const btnRef = React.useRef(null)
+    return (
+      <>
+        <Button size={'sm'} rounded='full' variant='primary' ref={btnRef} onClick={onOpen}>Receive</Button>
+        <Modal
+          onClose={onClose}
+          finalFocusRef={btnRef}
+          isOpen={isOpen}
+          scrollBehavior={'inside'}
+          size={'xs'}
+          motionPreset='slideInBottom'
+          isCentered
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Receive Money</ModalHeader>
+            {/* <ModalCloseButton /> */}
+            <ModalBody>
+              {/* <FormLabel>Address</FormLabel> */}
+              <Input isInvalid errorBorderColor='gray.300' padding={1} mb={4} fontSize={13} textAlign={'center'} placeholder={`${currentUser.id}`} isDisabled />
+              <Box rounded={'md'} overflow={'hidden'}>
+                <QRCode
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  // size={'auto'}
+                  bgColor={'white'}
+                  fgColor={'black'}
+                  value={`${currentUser.id}`}
+                />
+                {/* <img src="https://cdn-icons-png.flaticon.com/512/241/241528.png" /> */}
+              </Box>
+            </ModalBody>
+            <ModalFooter>
+              <Button w={'full'} onClick={onClose} colorScheme='blackAlpha'>Close</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
+    )
   }
 
   const getUserWallet = async () => {
@@ -70,9 +185,11 @@ export default function Profilepage() {
         <Text fontSize={'xl'}>Available Balance</Text>
         <Heading as='h2' size='2xl' style={{wordSpacing: '-5px'}}>Rs. {userWallet?.balance == null ? 0 : userWallet.balance}</Heading>
       </Box>
-      <HStack pt={2} spacing={4} justifyContent={'center'}>
-        <Button size={'sm'} rounded='full' variant='primary'>Send</Button>
-        <Button size={'sm'} rounded='full' variant='primary'>Receive</Button>
+      <HStack pt={2} spacing={2} justifyContent={'center'}>
+        {/* <Button size={'sm'} rounded='full' variant='primary'>Send</Button> */}
+        {/* <Button size={'sm'} rounded='full' variant='primary'>Receive</Button> */}
+        <SendMoneyModal />
+        <ReceiveMoneyModal />
       </HStack>
       <Box pt={10} mb={2}>
         <Heading as='h4' size='md' fontWeight={'semibold'}>Transactions</Heading>
