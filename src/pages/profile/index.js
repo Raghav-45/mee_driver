@@ -1,4 +1,4 @@
-import { Avatar, Badge, Box, Button, chakra, Container, Flex, FormLabel, Heading, HStack, Input, SimpleGrid, Text, useToast, VStack } from '@chakra-ui/react'
+import { Avatar, Badge, Box, Button, chakra, Container, Flex, FormLabel, Heading, HStack, Input, InputGroup, InputRightElement, SimpleGrid, Text, useToast, VStack } from '@chakra-ui/react'
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../../lib/supabaseClient'
 import { Icon } from '@chakra-ui/react'
@@ -16,6 +16,7 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  useClipboard,
 } from '@chakra-ui/react'
 
 export default function Profilepage() {
@@ -97,6 +98,7 @@ export default function Profilepage() {
 
   const ReceiveMoneyModal = () => {
     const { isOpen, onOpen, onClose } = useDisclosure()
+    const { onCopy, value, setValue, hasCopied } = useClipboard(`${currentUser.id}`)
     const btnRef = React.useRef(null)
     return (
       <>
@@ -116,7 +118,10 @@ export default function Profilepage() {
             {/* <ModalCloseButton /> */}
             <ModalBody>
               {/* <FormLabel>Address</FormLabel> */}
-              <Input isInvalid errorBorderColor='gray.300' padding={1} mb={4} fontSize={13} textAlign={'center'} placeholder={`${currentUser.id}`} isDisabled />
+              <HStack mb={4} fontSize={13} textAlign={'center'}>
+                <Input isInvalid errorBorderColor='gray.300' padding={2} value={`${currentUser.id}`} placeholder={`${currentUser.id}`} isDisabled />
+                <Button onClick={onCopy} transition={'all'}>{hasCopied ? "Copied!" : "Copy"}</Button>
+              </HStack>
               <Box rounded={'md'} overflow={'hidden'}>
                 <QRCode
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
