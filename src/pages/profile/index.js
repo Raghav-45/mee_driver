@@ -138,15 +138,11 @@ export default function Profilepage() {
   }
 
   const getUserWallet = async () => {
-    if (user.wallet_id == null) {
-      return {balance: null}
-    } else {
-      const { data, error } = await supabase.from('wallets')
-                                            .select('balance')
-                                            .eq('id', currentUser.id)
-                                            .single()
-      return data
-    }
+    const { data, error } = await supabase.from('wallets')
+                                          .select('balance')
+                                          .eq('id', currentUser.id)
+                                          .single()
+    return data
   }
 
   const getTransactions = async () => {
