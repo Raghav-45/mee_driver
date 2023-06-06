@@ -34,14 +34,6 @@ export default function Profilepage() {
   const [userWallet, setUserWallet] = useState()
   const [transactions, setTransactions] = useState([])
 
-  const getUserProfile = async () => {
-    const { data, error } = await supabase.from('profiles')
-                                          .select()
-                                          .eq('id', currentUser.id)
-                                          .single()
-    return data
-  }
-
   const SendMoneyModal = () => {
     const { isOpen, onOpen, onClose } = useDisclosure()
     const btnRef = React.useRef(null)
@@ -146,13 +138,12 @@ export default function Profilepage() {
   }
 
   const getUserWallet = async () => {
-    const user = await getUserProfile()
     if (user.wallet_id == null) {
       return {balance: null}
     } else {
       const { data, error } = await supabase.from('wallets')
                                             .select('balance')
-                                            .eq('id', user.wallet_id)
+                                            .eq('id', currentUser.id)
                                             .single()
       return data
     }
