@@ -51,7 +51,8 @@ export default function Register() {
       password: password,
       options: {
         data: {
-          username: name
+          username: name,
+          is_driver: true,
         },
       },
     })
