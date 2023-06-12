@@ -93,7 +93,7 @@ export default function Home() {
 
 
   const getDriverDetails = async () => {
-    const { error, data } = await supabase.from('profile_driver').select().eq('username', currentUser.user_metadata.username.toLowerCase()).maybeSingle()
+    const { error, data } = await supabase.from('profiles').select().eq('username', currentUser.user_metadata.username).maybeSingle()
     console.log(data)
     return data
   }
