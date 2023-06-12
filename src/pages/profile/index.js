@@ -301,11 +301,11 @@ export default function Profilepage() {
         {/* <Button size={'sm'} rounded='full' variant='primary'>Receive</Button> */}
         <SendMoneyModal />
         <ReceiveMoneyModal />
-      </HStack>
-      <HStack pt={2} spacing={2} justifyContent={'center'}>
         <AddMoneyModal />
-        {/* <Button size={'sm'} rounded='full' variant='primary'>Receive</Button> */}
       </HStack>
+      {/* <HStack pt={2} spacing={2} justifyContent={'center'}> */}
+        {/* <AddMoneyModal /> */}
+      {/* </HStack> */}
       <Box pt={10} mb={2}>
         <Heading as='h4' size='md' fontWeight={'semibold'}>Transactions</Heading>
       </Box>
