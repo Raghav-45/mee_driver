@@ -153,11 +153,11 @@ export default function Profilepage() {
     const logPaymentToDB = async (user, razorpay_payment_id, razorpay_order_id, razorpay_signature, amount) => {
       const { data, error } = await supabase.from('payment_logs')
                                             .insert({
-                                                      user,
                                                       razorpay_payment_id: razorpay_payment_id,
                                                       razorpay_order_id: razorpay_order_id,
                                                       razorpay_signature: razorpay_signature,
-                                                      amount,
+                                                      user: user,
+                                                      amount: amount,
                                                     })
       return data
     }
