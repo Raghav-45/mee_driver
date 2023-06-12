@@ -18,6 +18,8 @@ import {
   useDisclosure,
   useClipboard,
 } from '@chakra-ui/react'
+import Script from 'next/script'
+import axios from 'axios'
 
 export default function Profilepage() {
   const { currentUser } = useAuth()
@@ -142,6 +144,111 @@ export default function Profilepage() {
     )
   }
 
+  const AddMoneyModal = () => {
+    const { isOpen, onOpen, onClose } = useDisclosure()
+    const btnRef = React.useRef(null)
+    const [amount, setAmount] = useState('')
+    const toast = useToast()
+
+    const logPaymentToDB = async (razorpay_payment_id, razorpay_order_id, razorpay_signature) => {
+      const { data, error } = await supabase.from('payment_logs')
+                                            .insert({
+                                                      razorpay_payment_id: razorpay_payment_id,
+                                                      razorpay_order_id: razorpay_order_id,
+                                                      razorpay_signature: razorpay_signature,
+                                                    })
+      return data
+    }
+
+    const handleAddMoney = async (amount) => {
+      const generateRazorPayOrder = async (amount) => {
+        const res = await axios.post('/api/rzpay', {amount: amount})
+        return res.data
+      }
+      const order = await generateRazorPayOrder(amount)
+      const options = {
+        key: "rzp_test_bflHpE37hU5CbO", // Enter the Key ID generated from the Dashboard
+        amount: order.amount,
+        currency: order.currency,
+        name: "My Electric Vehicle",
+        image: "/icon-256x256.png",
+        order_id: order.id,
+        prefill: {
+          email: currentUser && currentUser?.email,
+          // contact: +919315988300,
+        },
+        handler: (response) => {
+          // alert(response)
+          toast({
+            title: 'Payment Success',
+            // description: 'Payment Success',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          })
+          // alert(response.razorpay_payment_id)
+          // alert(response.razorpay_order_id)
+          // alert(response.razorpay_signature)
+          //TODO: Add Data to Server to verify User's Payment authenticity by verifying the signature
+          logPaymentToDB(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature)
+          // const { data, error } = supabase.rpc('add_money_to_wallet', { wallet: currentUser.id, amount: 10 })
+        },
+        theme: {
+          color: "#000000"
+        },
+      }
+      const paymentObject = new window.Razorpay(options)
+      paymentObject.open()
+      paymentObject.on('payment.failed', (response) => {
+        // alert(response.error.code)
+        // alert(response.error.description)
+        toast({
+          title: 'Payment Failed',
+          description: response.error.description,
+          status: 'error',
+          duration: 3000,
+          isClosable: false,
+        })
+        // alert(response.error.source)
+        // alert(response.error.step)
+        // alert(response.error.reason)
+        // alert(response.error.metadata.order_id)
+        // alert(response.error.metadata.payment_id)
+      });
+    }
+
+    return (
+      <>
+        <Button size={'sm'} rounded='full' variant='primary' ref={btnRef} onClick={onOpen}>Add Money</Button>
+        <Modal
+          onClose={onClose}
+          finalFocusRef={btnRef}
+          isOpen={isOpen}
+          scrollBehavior={'inside'}
+          size={'xs'}
+          motionPreset='slideInBottom'
+          isCentered
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Add Money</ModalHeader>
+            {/* <ModalCloseButton /> */}
+            <ModalBody>
+              {/* <FormLabel>Address</FormLabel> */}
+              <HStack>
+                <Input w={'40%'} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder='Amount' />
+                <Button w={'60%'} size={'sm'} rounded='full' variant='primary' onClick={() => {onClose(); handleAddMoney(amount);}}>Pay</Button>
+              </HStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button w={'full'} onClick={onClose} colorScheme='blackAlpha'>Close</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
+    )
+  }
+
   const getUserWallet = async () => {
     const { data, error } = await supabase.from('wallets')
                                           .select('balance')
@@ -164,10 +271,20 @@ export default function Profilepage() {
   }, [currentUser])
 
   if (!currentUser) {
-    return <Box>Loading...</Box>
+    return <Box>
+              <Script
+                src="https://checkout.razorpay.com/v1/checkout.js"
+                strategy="beforeInteractive"
+              />
+              Loading...
+            </Box>
   }
 
-  return (
+  return (<>
+    <Script
+      src="https://checkout.razorpay.com/v1/checkout.js"
+      strategy="beforeInteractive"
+    />
     <Container maxW='container.lg' overflowX='auto' py={4}>
       {/* <chakra.pre p={4}>
         {currentUser && <pre> {JSON.stringify(currentUser, null, 2)}</pre>}
@@ -182,6 +299,10 @@ export default function Profilepage() {
         {/* <Button size={'sm'} rounded='full' variant='primary'>Receive</Button> */}
         <SendMoneyModal />
         <ReceiveMoneyModal />
+      </HStack>
+      <HStack pt={2} spacing={2} justifyContent={'center'}>
+        <AddMoneyModal />
+        {/* <Button size={'sm'} rounded='full' variant='primary'>Receive</Button> */}
       </HStack>
       <Box pt={10} mb={2}>
         <Heading as='h4' size='md' fontWeight={'semibold'}>Transactions</Heading>
@@ -215,5 +336,5 @@ export default function Profilepage() {
         </VStack>
       </Box>
     </Container>
-  )
+  </>)
 }
