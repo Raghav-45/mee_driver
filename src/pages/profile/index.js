@@ -177,13 +177,13 @@ export default function Profilepage() {
         order_id: order.id,
         prefill: {
           email: currentUser && currentUser?.email,
-          // contact: +919315988300,
+          contact: currentUser && currentUser?.phone,
         },
         handler: (response) => {
           // alert(response)
           toast({
-            title: 'Payment Success',
-            // description: 'Payment Success',
+            // title: 'Payment Success',
+            description: 'Payment Success',
             status: 'success',
             duration: 3000,
             isClosable: true,
