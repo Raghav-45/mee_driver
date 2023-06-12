@@ -150,12 +150,14 @@ export default function Profilepage() {
     const [amount, setAmount] = useState('')
     const toast = useToast()
 
-    const logPaymentToDB = async (razorpay_payment_id, razorpay_order_id, razorpay_signature) => {
+    const logPaymentToDB = async (user, razorpay_payment_id, razorpay_order_id, razorpay_signature, amount) => {
       const { data, error } = await supabase.from('payment_logs')
                                             .insert({
+                                                      user,
                                                       razorpay_payment_id: razorpay_payment_id,
                                                       razorpay_order_id: razorpay_order_id,
                                                       razorpay_signature: razorpay_signature,
+                                                      amount,
                                                     })
       return data
     }
@@ -190,7 +192,7 @@ export default function Profilepage() {
           // alert(response.razorpay_order_id)
           // alert(response.razorpay_signature)
           //TODO: Add Data to Server to verify User's Payment authenticity by verifying the signature
-          logPaymentToDB(response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature)
+          logPaymentToDB(currentUser.id, response.razorpay_payment_id, response.razorpay_order_id, response.razorpay_signature, (order.amount/100))
           // const { data, error } = supabase.rpc('add_money_to_wallet', { wallet: currentUser.id, amount: 10 })
         },
         theme: {
