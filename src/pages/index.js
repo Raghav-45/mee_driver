@@ -136,7 +136,7 @@ export default function Home() {
   
 
   const AcceptRide = async (payload) => {
-    const { data, error } = await supabase.from('waiting_rides').update({ is_accepted: true })
+    const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true })
                                                                 .match({id: payload.id,
                                                                         person_id: payload.person_id,
                                                                         driver_id: payload.driver_id,
@@ -175,7 +175,7 @@ export default function Home() {
 
   useEffect(() => {
     const sub = supabase.channel('any')
-      .on('postgres_changes', driver ? { event: '*', schema: 'public', table: 'waiting_rides', filter: `driver_id=eq.${driver.id}` } : { event: '*', schema: 'public', table: 'waiting_rides' }, payload => {
+      .on('postgres_changes', driver ? { event: '*', schema: 'public', table: 'waiting_rides_test', filter: `driver_id=eq.${driver.id}` } : { event: '*', schema: 'public', table: 'waiting_rides' }, payload => {
         // console.log('Change received!', payload)
 
         if (payload.eventType == 'INSERT') {
