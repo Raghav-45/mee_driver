@@ -133,7 +133,6 @@ export default function Home() {
   //     })
   //   }
   // }, [rideQueue])
-  
 
   const AcceptRide = async (payload) => {
     const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
@@ -194,11 +193,43 @@ export default function Home() {
       supabase.removeChannel(sub)
     }
   }, [watchForRealtimeChanges])
-  
 
   useEffect(() => {
     myRide && console.log('Got ride', myRide)
   }, [myRide])
+
+  const GetDriverName = (props) => {
+    const [userInfo, setUserInfo] = useState(null)
+
+    const getRequestedUserInfo = (u) => {
+      return new Promise((resolve, reject) => {
+        supabase.from("profiles").select("username").eq("id", u).single()
+          .then(({ data, error }) => {
+            if (error) {
+              reject(error)
+            } else {
+              console.log('info', data)
+              resolve(data)
+            }
+          })
+          .catch((error) => {reject(error)})
+      })
+    }
+
+    useEffect(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const data = await getRequestedUserInfo(props.uuid)
+          setUserInfo(data)
+        } catch (error) {
+          console.error(error)
+        }
+      }
+      fetchUserInfo()
+    }, [])
+
+    return (userInfo ? userInfo.username : 'Loading user info...')
+  };
 
   if (!isLoaded) {
     return <Box>Loading...</Box>
@@ -220,7 +251,7 @@ export default function Home() {
           {rideQueue.map((elem) => 
             <AspectRatio key={elem.id} ratio={1 / 1}>
               <Button rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'} textColor={'white'} size={'sm'} onClick={() => {AcceptRide(elem)}}>
-                {elem.id}
+                <GetDriverName uuid={String(elem.person_id)} />
               </Button>
             </AspectRatio>
           )}
