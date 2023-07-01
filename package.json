@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.10.6",
     "@react-google-maps/api": "^2.18.1",
     "@supabase/supabase-js": "^2.12.1",
+    "@yudiel/react-qr-scanner": "^1.1.9",
     "axios": "^1.4.0",
     "firebase": "^9.17.2",
     "framer-motion": "^10.3.4",
