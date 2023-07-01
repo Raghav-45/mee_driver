@@ -136,16 +136,14 @@ export default function Home() {
   
 
   const AcceptRide = async (payload) => {
-    const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true })
-                                                                .match({id: payload.id,
-                                                                        person_id: payload.person_id,
-                                                                        driver_id: payload.driver_id,
-                                                                        booked_at: payload.booked_at,
-                                                                        started_at: payload.started_at,
-                                                                        leave_at: payload.leave_at,
-                                                                        fare: payload.fare,
-                                                                        pickup_loc: payload.pickup_loc,
-                                                                        drop_loc: payload.drop_loc})
+    const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
+    // toast({
+    //   title: 'New Ride',
+    //   status: 'success',
+    //   duration: 10000,
+    //   isClosable: false,
+    //   position: 'bottom-right'
+    // })
     // console.log('gg', data, error, payload)
   }
 
@@ -175,8 +173,8 @@ export default function Home() {
 
   useEffect(() => {
     const sub = supabase.channel('any')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test', filter: `is_accepted=neq.true` }, payload => {
-        // console.log('Change received!', payload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test' }, payload => {
+        console.log('Change received!', payload)
 
         if (payload.eventType == 'INSERT') {
           setRideQueue(current => [...current, payload.new])
@@ -221,7 +219,7 @@ export default function Home() {
         <SimpleGrid height={'100%'} columns={2} spacing={4}>
           {rideQueue.map((elem) => 
             <AspectRatio key={elem.id} ratio={1 / 1}>
-              <Button rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'} textColor={'white'} size={'sm'} onClick={() => {AcceptRide(elem).then(toast({title: 'New Ride', status: 'success', duration: 10000, isClosable: false, position: 'bottom-right'}))}}>
+              <Button rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'} textColor={'white'} size={'sm'} onClick={() => {AcceptRide(elem)}}>
                 {elem.id}
               </Button>
             </AspectRatio>
