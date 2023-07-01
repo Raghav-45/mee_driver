@@ -175,7 +175,7 @@ export default function Home() {
 
   useEffect(() => {
     const sub = supabase.channel('any')
-      .on('postgres_changes', driver ? { event: '*', schema: 'public', table: 'waiting_rides_test', filter: `driver_id=eq.${driver.id}` } : { event: '*', schema: 'public', table: 'waiting_rides' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test', filter: `is_accepted=neq.true` }, payload => {
         // console.log('Change received!', payload)
 
         if (payload.eventType == 'INSERT') {
