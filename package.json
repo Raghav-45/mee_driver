@@ -16,7 +16,7 @@
     "@supabase/supabase-js": "^2.12.1",
     "@yudiel/react-qr-scanner": "^1.1.9",
     "axios": "^1.4.0",
-    "firebase": "^9.17.2",
+    "firebase": "^9.23.0",
     "framer-motion": "^10.3.4",
     "mapmyindia-react": "^1.0.6",
     "next": "13.2.4",
