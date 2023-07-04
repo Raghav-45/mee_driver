@@ -16,6 +16,9 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useRouter } from 'next/router'
 
+import { doc, setDoc } from "firebase/firestore"
+import { db } from '../../lib/firebaseClient'
+
 import { useJsApiLoader, GoogleMap, Marker, Autocomplete, DirectionsService, DirectionsRenderer } from "@react-google-maps/api";
 
 export default function Home() {
@@ -102,6 +105,13 @@ export default function Home() {
     currentUser && getDriverDetails().then((e) => setDriver(e))
   }, [currentUser])
 
+  function updateGeoLocOnDB() {
+    const driver_id = String(driver.id)
+    const cityRef = doc(db, 'map-data', driver_id)
+    const docData = { lat: center.lat, lng: center.lng, uuid: driver_id }
+    setDoc(cityRef, docData, { merge: false })
+  }
+
   useEffect(() => {
     const pingDriver = async () => {
       if (driver) {
@@ -113,6 +123,7 @@ export default function Home() {
           const { data, error } = await supabase.from('online_driver').insert({ id: driver.id})
         }
         // console.log(driver?.id)
+        updateGeoLocOnDB()
       }
     }
     pingDriver()
