@@ -114,7 +114,7 @@ export default function Home() {
     const docRef = doc(db, 'map-data', driver_id)
     const docData = { lat: lat, lng: lng, uuid: driver_id }
     setDoc(docRef, docData, { merge: false })
-    console.log('Updating database with new location:', lat, lng);
+    console.log('Updated DB with new location:', lat, lng);
   }
 
   useEffect(() => {
