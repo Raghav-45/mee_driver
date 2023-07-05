@@ -42,6 +42,9 @@ export default function Home() {
   const [pickupLoc, setPickupLoc] = useState('')
   const [destinationLoc, setDestinationLoc] = useState('')
 
+  const [latitude, setLatitude] = useState()
+  const [longitude, setLongitude] = useState()
+
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
   const [myRide, setMyRide] = useState()
 
@@ -105,11 +108,13 @@ export default function Home() {
     currentUser && getDriverDetails().then((e) => setDriver(e))
   }, [currentUser])
 
-  function updateGeoLocOnDB() {
+  const updateGeoLocOnDB = (lat, lng) => {
+    // Code to update the database with new latitude and longitude
     const driver_id = String(driver.id)
-    const cityRef = doc(db, 'map-data', driver_id)
-    const docData = { lat: center.lat, lng: center.lng, uuid: driver_id }
-    setDoc(cityRef, docData, { merge: false })
+    const docRef = doc(db, 'map-data', driver_id)
+    const docData = { lat: lat, lng: lng, uuid: driver_id }
+    setDoc(docRef, docData, { merge: false })
+    console.log('Updating database with new location:', lat, lng);
   }
 
   useEffect(() => {
@@ -123,11 +128,50 @@ export default function Home() {
           const { data, error } = await supabase.from('online_driver').insert({ id: driver.id})
         }
         // console.log(driver?.id)
-        updateGeoLocOnDB()
+        // updateGeoLocOnDB()
       }
     }
     pingDriver()
-  }, [driver])
+
+    const getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude: newLatitude, longitude: newLongitude } = position.coords
+          if (latitude !== newLatitude || longitude !== newLongitude) {
+            // Only update the database if the location has changed
+            updateGeoLocOnDB(newLatitude, newLongitude)
+            setLatitude(newLatitude)
+            setLongitude(newLongitude)
+          } else {
+            console.log('Same GeoLoc, No Need to Update on DB')
+          }
+        }, (error) => {
+          console.error('Error getting location:', error)
+        })
+      } else {
+        console.error('Geolocation is not supported by this browser.')
+      }
+    }
+
+    const interval = setInterval(() => {
+      if (driver) {getLocation()}
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [driver, latitude, longitude])
+
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     // Code to be executed every n seconds
+  //     if (driver) {
+  //       updateGeoLocOnDB()
+  //     }
+  //     // console.log('Action performed every n seconds');
+  //   }, 3000); // Replace 5000 with your desired interval in milliseconds (e.g., 1000 for 1 second)
+
+  //   // Cleanup the interval on component unmount
+  //   return () => clearInterval(interval);
+  // }, [driver]);
 
   // useEffect(() => {
   //   if (rideQueue.length > 0) {
