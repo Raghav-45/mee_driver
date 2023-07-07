@@ -29,48 +29,19 @@ export default function Home() {
     googleMapsApiKey: 'AIzaSyB0f0o77WzVWMIXX69u0oJL8zyKPKSsAEA',
     libraries: googleMapLibs,
   })
-  
-  const toast = useToast()
+
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
-  const [distance, setDistance] = useState('')
-  const [duration, setDuration] = useState('')
+  const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
-  const [driver, setDriver] = useState()
-
-  const [latitude, setLatitude] = useState()
-  const [longitude, setLongitude] = useState()
-
-  const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
-  const [myRide, setMyRide] = useState()
+  const [didPing, setDidPing] = useState(false)
 
   const [rideQueue, setRideQueue] = useState([])
-
-  function TabChange(index) {
-    index == 0 && toast({
-      title: 'Excited!',
-      description: "Riding is now avaliable",
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-      // variant:"information",
-    })
-
-    index == 2 && toast({
-      title: 'Info',
-      description: "Sorry, Renting service is currently not avaliable",
-      status: 'warning',
-      duration: 3000,
-      isClosable: true,
-      variant:"information",
-    })
-  }
-
+  const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
 
   async function calculateRoute(start, end) {
     if (start === '' || end === '') { return }
-    // setIsCalculatingRoute(true)
     const directionsService = new google.maps.DirectionsService()
     const results = await directionsService.route({
       origin: start,
@@ -78,12 +49,6 @@ export default function Home() {
       travelMode: google.maps.TravelMode.DRIVING,
     })
     setDirectionsResponse(results)
-
-    // console.log(results)
-
-    setDistance(results.routes[0].legs[0].distance.text)
-    setDuration(results.routes[0].legs[0].duration.text)
-    // setIsCalculatingRoute(false)
   }
 
   function clearRoute() {
@@ -94,51 +59,36 @@ export default function Home() {
     destinationInputRef.current.value = ''
   }
 
-
-  const getDriverDetails = async () => {
-    const { error, data } = await supabase.from('profiles').select().eq('username', currentUser.user_metadata.username).maybeSingle()
-    console.log(data)
-    return data
-  }
-
-  useEffect(() => {
-    currentUser && getDriverDetails().then((e) => setDriver(e))
-  }, [currentUser])
-
   const updateGeoLocOnDB = (lat, lng) => {
     // Code to update the database with new latitude and longitude
-    const driver_id = String(driver.id)
+    const driver_id = String(currentUser.id)
     const docRef = doc(db, 'map-data', driver_id)
     const docData = { lat: lat, lng: lng, uuid: driver_id }
     setDoc(docRef, docData, { merge: false })
     console.log('Updated DB with new location:', lat, lng);
   }
 
-  useEffect(() => {
-    const pingDriver = async () => {
-      if (driver) {
-        const { error, data } = await supabase.from('online_driver').select().eq('id', driver.id).maybeSingle()
-        if (data) {
-          console.log('datamila')
-          // ping it ( update last_ping_at )
-        } else {
-          const { data, error } = await supabase.from('online_driver').insert({ id: driver.id})
-        }
-        // console.log(driver?.id)
-        // updateGeoLocOnDB()
+  const pingDriver = async () => {
+    if (didPing) { console.log('already did ping') }
+    if (currentUser && !didPing) {
+      const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
+      if (!data) {
+        await supabase.from('online_driver').insert({ id: currentUser.id})
+        setDidPing(true)
+        console.log('ping done.')
       }
     }
-    pingDriver()
+  }
 
+  useEffect(() => {
     const getLocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
           const { latitude: newLatitude, longitude: newLongitude } = position.coords
-          if (latitude !== newLatitude || longitude !== newLongitude) {
+          if (geoLoc.lat !== newLatitude || geoLoc.lng !== newLongitude) {
             // Only update the database if the location has changed
             updateGeoLocOnDB(newLatitude, newLongitude)
-            setLatitude(newLatitude)
-            setLongitude(newLongitude)
+            setGeoLoc({lat: newLatitude, lng: newLongitude})
           } else {
             console.log('Same GeoLoc, No Need to Update on DB')
           }
@@ -150,58 +100,14 @@ export default function Home() {
       }
     }
 
-    const interval = setInterval(() => {
-      if (driver) {getLocation()}
-    }, 3000)
+    const interval = setInterval(() => {currentUser && getLocation(); pingDriver();}, 3000)
 
     return () => clearInterval(interval)
-  }, [driver, latitude, longitude])
-
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     // Code to be executed every n seconds
-  //     if (driver) {
-  //       updateGeoLocOnDB()
-  //     }
-  //     // console.log('Action performed every n seconds');
-  //   }, 3000); // Replace 5000 with your desired interval in milliseconds (e.g., 1000 for 1 second)
-
-  //   // Cleanup the interval on component unmount
-  //   return () => clearInterval(interval);
-  // }, [driver]);
-
-  // useEffect(() => {
-  //   if (rideQueue.length > 0) {
-  //     const e = rideQueue[rideQueue.length - 1]
-  //     console.log(e)
-  //     toast({
-  //       title: 'New Ride',
-  //       // description: `from (${e.pickup_loc}) - (${e.drop_loc}) for ${e.fare}Rs`,
-  //       description: `${e.fare} Rs`,
-  //       status: 'info',
-  //       duration: 10000,
-  //       isClosable: false,
-  //       position: 'bottom-right',
-  //     })
-  //   }
-  // }, [rideQueue])
+  }, [currentUser, geoLoc])
 
   const AcceptRide = async (payload) => {
-    const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
-    // toast({
-    //   title: 'New Ride',
-    //   status: 'success',
-    //   duration: 10000,
-    //   isClosable: false,
-    //   position: 'bottom-right'
-    // })
-    // console.log('gg', data, error, payload)
+    !payload.is_accepted && await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
   }
-
-  // useEffect(() => {
-  //   setRideQueue_Inserted(current => [...current].filter(a => a.id != true))
-  //   // setRideQueue_Updated(current => [...current].filter(a => a.id == true))
-  // }, [rideQueue_Updated])
 
   const updateRideIsAccepted = (updatedRide) => {
     setRideQueue(prevRides => {
@@ -216,14 +122,14 @@ export default function Home() {
 
   useEffect(() => {
     if (rideQueue.length > 0) {
-      const e = rideQueue[rideQueue.length - 1]
-      calculateRoute(e.pickup_loc, e.drop_loc)
+      const ride = rideQueue[rideQueue.length - 1]
+      calculateRoute(ride.pickup_loc, ride.drop_loc)
     }
   }, [rideQueue])
-  
 
   useEffect(() => {
-    const sub = supabase.channel('any')
+    const subscribe = supabase.channel('any')
+      //TODO: i have to add Filter Here
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test' }, payload => {
         console.log('Change received!', payload)
 
@@ -233,22 +139,11 @@ export default function Home() {
         if (payload.eventType == 'UPDATE') {
           updateRideIsAccepted(payload.new)
         }
-
-        // if (payload.new.is_accepted != true) {
-        //   console.log('i can get this ride', payload)
-        //   calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
-        // }
-
-        // watchForRealtimeChanges && setRideQueue(current => [...current, payload.new])
       }).subscribe()
     return () => {
-      supabase.removeChannel(sub)
+      supabase.removeChannel(subscribe)
     }
   }, [watchForRealtimeChanges])
-
-  useEffect(() => {
-    myRide && console.log('Got ride', myRide)
-  }, [myRide])
 
   const GetDriverName = (props) => {
     const [userInfo, setUserInfo] = useState(null)
