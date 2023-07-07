@@ -33,9 +33,6 @@ export default function Home() {
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
-
-  const [latitude, setLatitude] = useState()
-  const [longitude, setLongitude] = useState()
   const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
   const [rideQueue, setRideQueue] = useState([])
@@ -74,7 +71,7 @@ export default function Home() {
       if (currentUser) {
         const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
         if (!data) {
-          const { data, error } = await supabase.from('online_driver').insert({ id: currentUser.id})
+          await supabase.from('online_driver').insert({ id: currentUser.id})
         }
       }
     }
@@ -83,14 +80,11 @@ export default function Home() {
     const getLocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
-          // console.log('ggggg', position)
           const { latitude: newLatitude, longitude: newLongitude } = position.coords
           if (geoLoc.lat !== newLatitude || geoLoc.lng !== newLongitude) {
             // Only update the database if the location has changed
             updateGeoLocOnDB(newLatitude, newLongitude)
             setGeoLoc({lat: newLatitude, lng: newLongitude})
-            // setLatitude(newLatitude)
-            // setLongitude(newLongitude)
           } else {
             console.log('Same GeoLoc, No Need to Update on DB')
           }
@@ -102,9 +96,7 @@ export default function Home() {
       }
     }
 
-    const interval = setInterval(() => {
-      if (currentUser) {getLocation()}
-    }, 3000)
+    const interval = setInterval(() => currentUser && getLocation(), 3000)
 
     return () => clearInterval(interval)
   }, [currentUser, geoLoc])
