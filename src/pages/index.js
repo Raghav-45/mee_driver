@@ -76,6 +76,7 @@ export default function Home() {
         if (!data) {
           const { data, error } = await supabase.from('online_driver').insert({ id: currentUser.id})
         }
+        getLocation()
       }
     }
     pingDriver()
