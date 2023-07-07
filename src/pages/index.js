@@ -110,7 +110,7 @@ export default function Home() {
   }, [currentUser, geoLoc])
 
   const AcceptRide = async (payload) => {
-    const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
+    !payload.is_accepted && await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
   }
 
   const updateRideIsAccepted = (updatedRide) => {
@@ -126,8 +126,8 @@ export default function Home() {
 
   useEffect(() => {
     if (rideQueue.length > 0) {
-      const e = rideQueue[rideQueue.length - 1]
-      calculateRoute(e.pickup_loc, e.drop_loc)
+      const ride = rideQueue[rideQueue.length - 1]
+      calculateRoute(ride.pickup_loc, ride.drop_loc)
     }
   }, [rideQueue])
 
