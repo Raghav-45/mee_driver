@@ -36,6 +36,7 @@ export default function Home() {
 
   const [latitude, setLatitude] = useState()
   const [longitude, setLongitude] = useState()
+  const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
   const [rideQueue, setRideQueue] = useState([])
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
@@ -82,12 +83,14 @@ export default function Home() {
     const getLocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
+          // console.log('ggggg', position)
           const { latitude: newLatitude, longitude: newLongitude } = position.coords
-          if (latitude !== newLatitude || longitude !== newLongitude) {
+          if (geoLoc.lat !== newLatitude || geoLoc.lng !== newLongitude) {
             // Only update the database if the location has changed
             updateGeoLocOnDB(newLatitude, newLongitude)
-            setLatitude(newLatitude)
-            setLongitude(newLongitude)
+            setGeoLoc({lat: newLatitude, lng: newLongitude})
+            // setLatitude(newLatitude)
+            // setLongitude(newLongitude)
           } else {
             console.log('Same GeoLoc, No Need to Update on DB')
           }
@@ -104,7 +107,7 @@ export default function Home() {
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [currentUser, latitude, longitude])
+  }, [currentUser, geoLoc])
 
   const AcceptRide = async (payload) => {
     const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
