@@ -418,7 +418,7 @@ export default function Profilepage() {
                     fontSize='1.2em'
                     children='₹'
                   />
-                  <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder='Enter amount' />
+                  <Input type='number' value={amount} onChange={(e) => setAmount(e.target.value)} placeholder='Enter amount' />
                   <InputRightElement width='auto' overflow={'hidden'}>
                     {<SlideFade in={amount} offsetX='10px' offsetY='-8'>
                     <Button h='1.75rem' ml={0} m={1} size='sm' onClick={() => {onClose(); handleAddMoney(amount);}}>
