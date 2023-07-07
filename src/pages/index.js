@@ -10,27 +10,27 @@ import { RiTruckFill } from 'react-icons/ri'
 import { FaTruckLoading } from 'react-icons/fa'
 import { TbTruckLoading } from 'react-icons/tb'
 
-import { Toast } from "../../components/Toast";
+import { Toast } from '../../components/Toast'
 import { supabase } from '../../lib/supabaseClient'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useRouter } from 'next/router'
 
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebaseClient'
 
 import { useJsApiLoader, GoogleMap, Marker, Autocomplete, DirectionsService, DirectionsRenderer } from "@react-google-maps/api";
 
-export default function Home() {
-  const toast = useToast()
-  const { currentUser } = useAuth()
-  const router = useRouter()
+const googleMapLibs = ['places']
 
+export default function Home() {
+  const { currentUser } = useAuth()
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: 'AIzaSyB0f0o77WzVWMIXX69u0oJL8zyKPKSsAEA',
-    libraries: ['places'],
+    libraries: googleMapLibs,
   })
-
+  
+  const toast = useToast()
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
@@ -38,9 +38,6 @@ export default function Home() {
   const [duration, setDuration] = useState('')
 
   const [driver, setDriver] = useState()
-
-  const [pickupLoc, setPickupLoc] = useState('')
-  const [destinationLoc, setDestinationLoc] = useState('')
 
   const [latitude, setLatitude] = useState()
   const [longitude, setLongitude] = useState()
