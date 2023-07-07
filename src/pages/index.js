@@ -29,48 +29,22 @@ export default function Home() {
     googleMapsApiKey: 'AIzaSyB0f0o77WzVWMIXX69u0oJL8zyKPKSsAEA',
     libraries: googleMapLibs,
   })
-  
-  const toast = useToast()
+
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
-  const [distance, setDistance] = useState('')
-  const [duration, setDuration] = useState('')
 
   const [driver, setDriver] = useState()
 
   const [latitude, setLatitude] = useState()
   const [longitude, setLongitude] = useState()
 
-  const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
-  const [myRide, setMyRide] = useState()
-
   const [rideQueue, setRideQueue] = useState([])
 
-  function TabChange(index) {
-    index == 0 && toast({
-      title: 'Excited!',
-      description: "Riding is now avaliable",
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-      // variant:"information",
-    })
-
-    index == 2 && toast({
-      title: 'Info',
-      description: "Sorry, Renting service is currently not avaliable",
-      status: 'warning',
-      duration: 3000,
-      isClosable: true,
-      variant:"information",
-    })
-  }
-
+  const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
 
   async function calculateRoute(start, end) {
     if (start === '' || end === '') { return }
-    // setIsCalculatingRoute(true)
     const directionsService = new google.maps.DirectionsService()
     const results = await directionsService.route({
       origin: start,
@@ -78,12 +52,6 @@ export default function Home() {
       travelMode: google.maps.TravelMode.DRIVING,
     })
     setDirectionsResponse(results)
-
-    // console.log(results)
-
-    setDistance(results.routes[0].legs[0].distance.text)
-    setDuration(results.routes[0].legs[0].duration.text)
-    // setIsCalculatingRoute(false)
   }
 
   function clearRoute() {
@@ -245,10 +213,6 @@ export default function Home() {
       supabase.removeChannel(sub)
     }
   }, [watchForRealtimeChanges])
-
-  useEffect(() => {
-    myRide && console.log('Got ride', myRide)
-  }, [myRide])
 
   const GetDriverName = (props) => {
     const [userInfo, setUserInfo] = useState(null)
