@@ -34,13 +34,10 @@ export default function Home() {
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
 
-  const [driver, setDriver] = useState()
-
   const [latitude, setLatitude] = useState()
   const [longitude, setLongitude] = useState()
 
   const [rideQueue, setRideQueue] = useState([])
-
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
 
   async function calculateRoute(start, end) {
@@ -62,20 +59,9 @@ export default function Home() {
     destinationInputRef.current.value = ''
   }
 
-
-  const getDriverDetails = async () => {
-    const { error, data } = await supabase.from('profiles').select().eq('username', currentUser.user_metadata.username).maybeSingle()
-    console.log(data)
-    return data
-  }
-
-  useEffect(() => {
-    currentUser && getDriverDetails().then((e) => setDriver(e))
-  }, [currentUser])
-
   const updateGeoLocOnDB = (lat, lng) => {
     // Code to update the database with new latitude and longitude
-    const driver_id = String(driver.id)
+    const driver_id = String(currentUser.id)
     const docRef = doc(db, 'map-data', driver_id)
     const docData = { lat: lat, lng: lng, uuid: driver_id }
     setDoc(docRef, docData, { merge: false })
@@ -84,16 +70,11 @@ export default function Home() {
 
   useEffect(() => {
     const pingDriver = async () => {
-      if (driver) {
-        const { error, data } = await supabase.from('online_driver').select().eq('id', driver.id).maybeSingle()
-        if (data) {
-          console.log('datamila')
-          // ping it ( update last_ping_at )
-        } else {
-          const { data, error } = await supabase.from('online_driver').insert({ id: driver.id})
+      if (currentUser) {
+        const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
+        if (!data) {
+          const { data, error } = await supabase.from('online_driver').insert({ id: currentUser.id})
         }
-        // console.log(driver?.id)
-        // updateGeoLocOnDB()
       }
     }
     pingDriver()
@@ -119,57 +100,15 @@ export default function Home() {
     }
 
     const interval = setInterval(() => {
-      if (driver) {getLocation()}
+      if (currentUser) {getLocation()}
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [driver, latitude, longitude])
-
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     // Code to be executed every n seconds
-  //     if (driver) {
-  //       updateGeoLocOnDB()
-  //     }
-  //     // console.log('Action performed every n seconds');
-  //   }, 3000); // Replace 5000 with your desired interval in milliseconds (e.g., 1000 for 1 second)
-
-  //   // Cleanup the interval on component unmount
-  //   return () => clearInterval(interval);
-  // }, [driver]);
-
-  // useEffect(() => {
-  //   if (rideQueue.length > 0) {
-  //     const e = rideQueue[rideQueue.length - 1]
-  //     console.log(e)
-  //     toast({
-  //       title: 'New Ride',
-  //       // description: `from (${e.pickup_loc}) - (${e.drop_loc}) for ${e.fare}Rs`,
-  //       description: `${e.fare} Rs`,
-  //       status: 'info',
-  //       duration: 10000,
-  //       isClosable: false,
-  //       position: 'bottom-right',
-  //     })
-  //   }
-  // }, [rideQueue])
+  }, [currentUser, latitude, longitude])
 
   const AcceptRide = async (payload) => {
     const { data, error } = await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
-    // toast({
-    //   title: 'New Ride',
-    //   status: 'success',
-    //   duration: 10000,
-    //   isClosable: false,
-    //   position: 'bottom-right'
-    // })
-    // console.log('gg', data, error, payload)
   }
-
-  // useEffect(() => {
-  //   setRideQueue_Inserted(current => [...current].filter(a => a.id != true))
-  //   // setRideQueue_Updated(current => [...current].filter(a => a.id == true))
-  // }, [rideQueue_Updated])
 
   const updateRideIsAccepted = (updatedRide) => {
     setRideQueue(prevRides => {
