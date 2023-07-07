@@ -76,7 +76,6 @@ export default function Home() {
         if (!data) {
           const { data, error } = await supabase.from('online_driver').insert({ id: currentUser.id})
         }
-        getLocation()
       }
     }
     pingDriver()
@@ -131,10 +130,10 @@ export default function Home() {
       calculateRoute(e.pickup_loc, e.drop_loc)
     }
   }, [rideQueue])
-  
 
   useEffect(() => {
-    const sub = supabase.channel('any')
+    const subscribe = supabase.channel('any')
+      //TODO: i have to add Filter Here
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test' }, payload => {
         console.log('Change received!', payload)
 
@@ -144,16 +143,9 @@ export default function Home() {
         if (payload.eventType == 'UPDATE') {
           updateRideIsAccepted(payload.new)
         }
-
-        // if (payload.new.is_accepted != true) {
-        //   console.log('i can get this ride', payload)
-        //   calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
-        // }
-
-        // watchForRealtimeChanges && setRideQueue(current => [...current, payload.new])
       }).subscribe()
     return () => {
-      supabase.removeChannel(sub)
+      supabase.removeChannel(subscribe)
     }
   }, [watchForRealtimeChanges])
 
