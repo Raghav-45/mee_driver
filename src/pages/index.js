@@ -35,6 +35,8 @@ export default function Home() {
   const [directionsResponse, setDirectionsResponse] = useState(null)
   const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
+  const [didPing, setDidPing] = useState(false)
+
   const [rideQueue, setRideQueue] = useState([])
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
 
@@ -66,17 +68,19 @@ export default function Home() {
     console.log('Updated DB with new location:', lat, lng);
   }
 
-  useEffect(() => {
-    const pingDriver = async () => {
-      if (currentUser) {
-        const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
-        if (!data) {
-          await supabase.from('online_driver').insert({ id: currentUser.id})
-        }
+  const pingDriver = async () => {
+    if (didPing) { console.log('already did ping') }
+    if (currentUser && !didPing) {
+      const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
+      if (!data) {
+        await supabase.from('online_driver').insert({ id: currentUser.id})
+        setDidPing(true)
+        console.log('ping done.')
       }
     }
-    pingDriver()
+  }
 
+  useEffect(() => {
     const getLocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
@@ -96,7 +100,7 @@ export default function Home() {
       }
     }
 
-    const interval = setInterval(() => currentUser && getLocation(), 3000)
+    const interval = setInterval(() => {currentUser && getLocation(); pingDriver();}, 3000)
 
     return () => clearInterval(interval)
   }, [currentUser, geoLoc])
