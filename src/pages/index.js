@@ -4,12 +4,6 @@ import { AiFillCar } from 'react-icons/ai'
 import { FiPackage } from 'react-icons/fi'
 import { GiCarWheel } from 'react-icons/gi'
 
-import { HiLocationMarker } from 'react-icons/hi'
-import { TbLocationFilled } from 'react-icons/tb'
-import { RiTruckFill } from 'react-icons/ri'
-import { FaTruckLoading } from 'react-icons/fa'
-import { TbTruckLoading } from 'react-icons/tb'
-
 import { Toast } from '../../components/Toast'
 import { supabase } from '../../lib/supabaseClient'
 import { useEffect, useState } from 'react'
@@ -30,6 +24,7 @@ export default function Home() {
     libraries: googleMapLibs,
   })
 
+  const [map, setMap] = useState(/** @type google.maps.Map */ (null))
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
@@ -40,15 +35,43 @@ export default function Home() {
   const [rideQueue, setRideQueue] = useState([])
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
 
-  async function calculateRoute(start, end) {
-    if (start === '' || end === '') { return }
+  const [wayPoints_GeoLoc, setWayPoints_Geoloc] = useState([])
+  const [wayPts, setWayPts] = useState([])
+
+  // {
+  //   location: 'str',
+  //   stopover: true,
+  // }
+
+  async function calculateRoute() {
+    // if (start === '' || end === '') { return }
     const directionsService = new google.maps.DirectionsService()
+    // const results = await directionsService.route({
+    //   origin: start,
+    //   destination: end,
+    //   waypoints: [{
+    //       location: { lat: 28.659051, lng: 77.113777 },
+    //       stopover: true,
+    //     }],
+    //   travelMode: google.maps.TravelMode.DRIVING,
+    // })
     const results = await directionsService.route({
-      origin: start,
-      destination: end,
+      origin: wayPoints_GeoLoc[0],
+      destination: wayPoints_GeoLoc[wayPoints_GeoLoc.length - 1],
+      waypoints: Array.from({length: wayPoints_GeoLoc.length}, (_, i) => i + 1).map((elem, index) => [
+        {
+          location: wayPoints_GeoLoc[index],
+          stopover: true,
+        },
+        {
+          location: wayPoints_GeoLoc[index + 1],
+          stopover: true,
+        },
+      ]),
       travelMode: google.maps.TravelMode.DRIVING,
     })
-    setDirectionsResponse(results)
+    // setDirectionsResponse(results)
+    setWayPts(current => [...current, results])
   }
 
   function clearRoute() {
@@ -122,10 +145,29 @@ export default function Home() {
 
   useEffect(() => {
     if (rideQueue.length > 0) {
-      const ride = rideQueue[rideQueue.length - 1]
-      calculateRoute(ride.pickup_loc, ride.drop_loc)
+      const ride = rideQueue[rideQueue.length - 1] // New ride ( last element of array )
+      setWayPoints_Geoloc(current => [...current, ride.pickup_geoloc, ride.drop_geoloc])
+      // calculateRoute(ride.pickup_geoloc, ride.drop_geoloc)
+      // calculateRoute()
     }
   }, [rideQueue])
+
+  useEffect(() => {
+    console.log('wwaypnt update effecter', wayPoints_GeoLoc)
+    const calcuRoute = async () => {
+      const directionsService = new google.maps.DirectionsService()
+      const results = await directionsService.route({
+        origin: wayPoints_GeoLoc[0],
+        destination: wayPoints_GeoLoc[wayPoints_GeoLoc.length - 1],
+        waypoints: wayPoints_GeoLoc.slice(1, -1).map((elem) => {return { location: elem, stopover: true }}),
+        travelMode: google.maps.TravelMode.DRIVING,
+      })
+      // setDirectionsResponse(results)
+      setWayPts(current => [...current, results])
+    }
+    map && wayPoints_GeoLoc.length != 0 && calcuRoute()
+  }, [wayPoints_GeoLoc, map])
+  
 
   useEffect(() => {
     const subscribe = supabase.channel('any')
@@ -187,9 +229,10 @@ export default function Home() {
       <Box pt={4}>
         <Box mb={4} position={'relative'} left={0} top={0} h={'200px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
           <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
-            <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
+            <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions} onLoad={map => setMap(map)}>
               {/* <Marker position={center} /> */}
-              {directionsResponse && <DirectionsRenderer directions={directionsResponse} />}
+              {/* {directionsResponse && <DirectionsRenderer directions={directionsResponse} />} */}
+              {wayPts && wayPts.map((elem) => <DirectionsRenderer directions={elem} />)}
             </GoogleMap>
           </Box>
         </Box>
