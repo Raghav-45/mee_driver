@@ -1,25 +1,13 @@
-import { chakra, SimpleGrid, Tabs, TabList, TabPanels, Tab, TabPanel, Flex, Text, Center, Box, Input, Button, Stack, VStack, HStack, InputGroup, InputLeftElement, AspectRatio } from '@chakra-ui/react'
-import { useToast } from '@chakra-ui/react'
-import { AiFillCar } from 'react-icons/ai'
-import { FiPackage } from 'react-icons/fi'
-import { GiCarWheel } from 'react-icons/gi'
+import { SimpleGrid, Box, Button, AspectRatio } from '@chakra-ui/react'
 
-import { HiLocationMarker } from 'react-icons/hi'
-import { TbLocationFilled } from 'react-icons/tb'
-import { RiTruckFill } from 'react-icons/ri'
-import { FaTruckLoading } from 'react-icons/fa'
-import { TbTruckLoading } from 'react-icons/tb'
-
-import { Toast } from '../../components/Toast'
 import { supabase } from '../../lib/supabaseClient'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useRouter } from 'next/router'
 
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../../lib/firebaseClient'
 
-import { useJsApiLoader, GoogleMap, Marker, Autocomplete, DirectionsService, DirectionsRenderer } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap, Marker, Autocomplete, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 
 const googleMapLibs = ['places']
 
@@ -150,7 +138,7 @@ export default function Home() {
 
     const getRequestedUserInfo = (u) => {
       return new Promise((resolve, reject) => {
-        supabase.from("profiles").select("username").eq("id", u).single()
+        supabase.from('profiles').select('username').eq('id', u).single()
           .then(({ data, error }) => {
             if (error) {
               reject(error)
