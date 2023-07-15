@@ -1,4 +1,4 @@
-import { SimpleGrid, Box, Button, AspectRatio } from '@chakra-ui/react'
+import { useToast, SimpleGrid, Box, Button, AspectRatio } from '@chakra-ui/react'
 
 import { supabase } from '../../lib/supabaseClient'
 import { useEffect, useState } from 'react'
@@ -17,6 +17,8 @@ export default function Home() {
     googleMapsApiKey: 'AIzaSyB0f0o77WzVWMIXX69u0oJL8zyKPKSsAEA',
     libraries: googleMapLibs,
   })
+
+  const toast = useToast()
 
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
@@ -111,6 +113,13 @@ export default function Home() {
   useEffect(() => {
     if (rideQueue.length > 0) {
       const ride = rideQueue[rideQueue.length - 1]
+      toast({
+        title: 'New Ride',
+        description: `Fare ₹${ride.fare}`,
+        status: 'info',
+        duration: 10000,
+        isClosable: true,
+      })
       calculateRoute(ride.pickup_loc, ride.drop_loc)
     }
   }, [rideQueue])
