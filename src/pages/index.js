@@ -1,4 +1,4 @@
-import { useToast, SimpleGrid, Box, Button, AspectRatio, useDisclosure, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogCloseButton, AlertDialogBody, AlertDialogFooter } from '@chakra-ui/react'
+import { useToast, SimpleGrid, Box, Button, AspectRatio, useDisclosure, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogCloseButton, AlertDialogBody, AlertDialogFooter, AlertIcon, Alert, Heading } from '@chakra-ui/react'
 
 import { supabase } from '../../lib/supabaseClient'
 import { useEffect, useRef, useState } from 'react'
@@ -297,7 +297,7 @@ export default function Home() {
           </AlertDialog>
         </>}
 
-        <SimpleGrid height={'100%'} columns={2} spacing={4}>
+        {/* <SimpleGrid height={'100%'} columns={2} spacing={4}>
           {rideQueue && rideQueue.map((elem) => 
             <AspectRatio key={elem.id} ratio={1 / 1}>
               <Button rounded={'xl'} bg={elem.is_accepted != true ? 'red.400' : 'blue.400'} colorScheme={elem.is_accepted != true ? 'red' : 'blue'} textColor={'white'} size={'sm'} onClick={() => {AcceptRide(elem)}}>
@@ -312,7 +312,16 @@ export default function Home() {
               </Button>
             </AspectRatio>
           )}
-        </SimpleGrid>
+        </SimpleGrid> */}
+
+        <Heading as='h3' size='lg' mb={1}>Ride Queue</Heading>
+
+        {rideQueue && rideQueue.map((elem) => (
+          <Alert status={elem.is_accepted == true ? "success" : "error"} rounded={'xl'}>
+            <AlertIcon />
+            Rider's Name - <GetDriverName uuid={String(elem.person_id)} />
+          </Alert>
+        ))}
       </Box>
 
       {/* <chakra.pre p={4}>
