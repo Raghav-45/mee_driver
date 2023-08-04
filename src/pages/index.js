@@ -1,7 +1,7 @@
-import { useToast, SimpleGrid, Box, Button, AspectRatio } from '@chakra-ui/react'
+import { useToast, SimpleGrid, Box, Button, AspectRatio, useDisclosure, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogCloseButton, AlertDialogBody, AlertDialogFooter } from '@chakra-ui/react'
 
 import { supabase } from '../../lib/supabaseClient'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 
 import { doc, setDoc } from 'firebase/firestore'
@@ -26,9 +26,13 @@ export default function Home() {
   const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
   const [didPing, setDidPing] = useState(false)
-
+  
   const [rideQueue, setRideQueue] = useState([])
   const [watchForRealtimeChanges, setWatchForRealtimeChanges] = useState(true)
+
+  const { isOpen: isOpen_NewRideDialog, onOpen: onOpen_NewRideDialog, onClose: onClose_NewRideDialog } = useDisclosure()
+  const cancelRef_NewRideDialog = useRef()
+  const [alertRide, setAlertRide] = useState()
 
   async function calculateRoute(start, end) {
     if (start === '' || end === '') { return }
@@ -116,20 +120,22 @@ export default function Home() {
     })
   }
 
-  useEffect(() => {
-    if (rideQueue.length > 0) {
-      const ride = rideQueue[rideQueue.length - 1]
-      // TODO: I've to add some opoup type in this or dialog to alert driver about new Ride
-      toast({
-        title: 'New Ride',
-        description: `Fare ₹${ride.fare}`,
-        status: 'info',
-        duration: 10000,
-        isClosable: true,
-      })
-      calculateRoute(ride.pickup_loc, ride.drop_loc)
-    }
-  }, [rideQueue])
+  // useEffect(() => {
+  //   if (rideQueue.length > 0) {
+  //     const ride = rideQueue[rideQueue.length - 1]
+  //     // TODO: I'll add popup or dialog to alert driver about new Ride
+  //     toast({
+  //       title: 'New Ride',
+  //       description: `Fare ₹${ride.fare}`,
+  //       status: 'info',
+  //       duration: 10000,
+  //       isClosable: true,
+  //     })
+  //     setAlertRide(ride)
+  //     onOpen_NewRideDialog()
+  //     calculateRoute(ride.pickup_loc, ride.drop_loc)
+  //   }
+  // }, [rideQueue])
 
   const rideisAccepted = (payload) => {
     rideQueue.forEach((elem) => {
@@ -167,6 +173,10 @@ export default function Home() {
 
         if (payload.eventType == 'INSERT' && payload.new.is_accepted == null) {
           setRideQueue(current => [...current, payload.new])
+
+          setAlertRide(payload.new)
+          onOpen_NewRideDialog()
+          calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
         }
         if (payload.eventType == 'UPDATE' && payload.new.is_accepted == true) {
           if (payload.new.is_accepted == true && payload.new.driver_id == currentUser.id) {
@@ -228,7 +238,7 @@ export default function Home() {
   return (
     <Box>
       <Box pt={4}>
-        <Box mb={4} position={'relative'} left={0} top={0} h={'200px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
+        <Box border='2px' borderColor='gray.200' mb={4} position={'relative'} left={0} top={0} h={'200px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
           <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
             <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
               {/* <Marker position={center} /> */}
@@ -236,6 +246,40 @@ export default function Home() {
             </GoogleMap>
           </Box>
         </Box>
+
+        {alertRide && <>
+          <AlertDialog
+            motionPreset='slideInBottom'
+            leastDestructiveRef={cancelRef_NewRideDialog}
+            onClose={onClose_NewRideDialog}
+            isOpen={isOpen_NewRideDialog}
+            isCentered
+          >
+            <AlertDialogOverlay />
+            <AlertDialogContent rounded={'xl'}>
+              <AlertDialogHeader>Accept Ride?</AlertDialogHeader>
+              
+              <AlertDialogCloseButton />
+              
+              <AlertDialogBody py={0}>
+                <Box border='2px' borderColor='gray.200' mb={4} position={'relative'} left={0} top={0} h={'200px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
+                  <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
+                    <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
+                      {/* <Marker position={center} /> */}
+                      // TODO: Show New Ride's Route here, and show Ride route in main map ( also planning to stop driver from reviving new rides when he is currently in an ride. )
+                      {directionsResponse && <DirectionsRenderer directions={directionsResponse} />}
+                    </GoogleMap>
+                  </Box>
+                </Box>
+              </AlertDialogBody>
+              
+              <AlertDialogFooter pt={0} justifyContent={'space-between'}>
+                <Button width={'48%'} colorScheme='red' ref={cancelRef_NewRideDialog} onClick={() => {setRideQueue(current => removeIfRideExists([...current], alertRide.id)); onClose_NewRideDialog();}}>Reject</Button>
+                <Button width={'48%'} colorScheme='blue' onClick={() => {AcceptRide(alertRide); onClose_NewRideDialog();}}>Accept ₹{alertRide.fare}</Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>}
 
         <SimpleGrid height={'100%'} columns={2} spacing={4}>
           {rideQueue && rideQueue.map((elem) => 
