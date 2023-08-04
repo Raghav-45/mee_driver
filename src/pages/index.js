@@ -193,12 +193,12 @@ export default function Home() {
           calculateRoute(payload.new.pickup_loc, payload.new.drop_loc)
         }
         if (payload.eventType == 'UPDATE' && payload.new.is_accepted == true) {
-          if (payload.new.is_accepted == true && payload.new.driver_id == currentUser.id) {
+          if (payload.new.driver_id == currentUser.id) {
             updateRideIsAccepted(payload.new)
             setAcceptedRide(payload.new)
             calculateRouteForAcceptedRide(payload.new.pickup_loc, payload.new.drop_loc)
           }
-          if (payload.new.is_accepted == true && payload.new.driver_id != currentUser.id) {
+          if (payload.new.driver_id != currentUser.id) {
             setRideQueue(current => removeIfRideExists([...current], payload.new.id))
           }
         }
