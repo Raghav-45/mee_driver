@@ -51,15 +51,18 @@ export default function Home() {
 
   const updateGeoLocOnDB = (lat, lng) => {
     // Code to update the database with new latitude and longitude
-    const driver_id = String(currentUser.id)
-    const docRef = doc(db, 'map-data', driver_id)
-    const docData = { lat: lat, lng: lng, uuid: driver_id }
-    setDoc(docRef, docData, { merge: false })
-    console.log('Updated DB with new location:', lat, lng);
-  }
+    const driver_id = String(currentUser.id);
+    const docRef = doc(db, "map-data", driver_id);
+    const docData = { lat: lat, lng: lng, uuid: driver_id };
+    setDoc(docRef, docData, { merge: false });
+    console.log("Updated DB with new location:", lat, lng);
+  };
 
   const pingDriver = async () => {
-    if (didPing) { console.log('already did ping') }
+    if (didPing) {
+      console.log("already did ping");
+    }
+    
     if (currentUser && !didPing) {
       const { error, data } = await supabase.from('online_driver').select().eq('id', currentUser.id).maybeSingle()
       if (!data) {
@@ -91,13 +94,16 @@ export default function Home() {
     }
 
     const interval = setInterval(() => {currentUser && getLocation(); pingDriver();}, 3000)
-
     return () => clearInterval(interval)
   }, [currentUser, geoLoc])
 
   const AcceptRide = async (payload) => {
-    !payload.is_accepted && await supabase.from('waiting_rides_test').update({ is_accepted: true, driver_id: currentUser.id }).eq('id', payload.id)
-  }
+    !payload.is_accepted &&
+      (await supabase
+        .from("waiting_rides_test")
+        .update({ is_accepted: true, driver_id: currentUser.id })
+        .eq("id", payload.id));
+  };
 
   const updateRideIsAccepted = (updatedRide) => {
     setRideQueue(prevRides => {
@@ -113,6 +119,7 @@ export default function Home() {
   useEffect(() => {
     if (rideQueue.length > 0) {
       const ride = rideQueue[rideQueue.length - 1]
+      // TODO: I've to add some opoup type in this or dialog to alert driver about new Ride
       toast({
         title: 'New Ride',
         description: `Fare ₹${ride.fare}`,
@@ -137,7 +144,6 @@ export default function Home() {
         return true;
       }
     }
-
     return false;
   }
 
@@ -146,12 +152,10 @@ export default function Home() {
     for (var i = 0; i < array.length; i++) {
       if (array[i].id == checkFor) {
         console.log('this exists', i)
-        // return true;
       } else {
         updated_array.push(array[i])
       }
     }
-
     return updated_array;
   }
 
@@ -170,12 +174,8 @@ export default function Home() {
           }
           if (payload.new.is_accepted == true && payload.new.driver_id != currentUser.id) {
             setRideQueue(current => removeIfRideExists([...current], payload.new.id))
-            // updateRideIsAccepted(payload.new)
           }
         }
-        // if (payload.eventType == 'UPDATE') {
-        //   updateRideIsAccepted(payload.new)
-        // }
       }).subscribe()
     return () => {
       supabase.removeChannel(subscribe)
@@ -187,18 +187,24 @@ export default function Home() {
 
     const getRequestedUserInfo = (u) => {
       return new Promise((resolve, reject) => {
-        supabase.from('profiles').select('username').eq('id', u).single()
+        supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", u)
+          .single()
           .then(({ data, error }) => {
             if (error) {
-              reject(error)
+              reject(error);
             } else {
-              console.log('info', data)
-              resolve(data)
+              console.log("info", data);
+              resolve(data);
             }
           })
-          .catch((error) => {reject(error)})
-      })
-    }
+          .catch((error) => {
+            reject(error);
+          });
+      });
+    };
 
     useEffect(() => {
       const fetchUserInfo = async () => {
