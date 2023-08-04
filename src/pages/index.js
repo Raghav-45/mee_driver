@@ -315,9 +315,8 @@ export default function Home() {
         </SimpleGrid> */}
 
         <Heading as='h3' size='lg' mb={1}>Ride Queue</Heading>
-
-        {rideQueue && rideQueue.map((elem) => (
-          <Alert status={elem.is_accepted == true ? "success" : "error"} rounded={'xl'}>
+        {rideQueue && rideQueue.map((elem, i) => (
+          <Alert status={elem.is_accepted == true ? "success" : "error"} roundedTop={i == 0 && 'xl'} roundedBottom={i == (rideQueue.length-1) && 'xl'} borderBottom={i != (rideQueue.length-1) && '2px'} borderColor='green.200'>
             <AlertIcon />
             Rider's Name - <GetDriverName uuid={String(elem.person_id)} />
           </Alert>
