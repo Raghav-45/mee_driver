@@ -23,6 +23,7 @@ export default function Home() {
   const center = { lat: 28.659051, lng: 77.113777 }
   const mapOptions = {zoomControl: false, streetViewControl: false, mapTypeControl: false, fullscreenControl: false}
   const [directionsResponse, setDirectionsResponse] = useState(null)
+  const [directionsResponse_AcceptedRide, setDirectionsResponse_AcceptedRide] = useState(null)
   const [geoLoc, setGeoLoc] = useState({lat: null, lng: null})
 
   const [didPing, setDidPing] = useState(false)
@@ -33,6 +34,8 @@ export default function Home() {
   const { isOpen: isOpen_NewRideDialog, onOpen: onOpen_NewRideDialog, onClose: onClose_NewRideDialog } = useDisclosure()
   const cancelRef_NewRideDialog = useRef()
   const [alertRide, setAlertRide] = useState()
+  
+  const [acceptedRide, setAcceptedRide] = useState()
 
   async function calculateRoute(start, end) {
     if (start === '' || end === '') { return }
@@ -43,6 +46,17 @@ export default function Home() {
       travelMode: google.maps.TravelMode.DRIVING,
     })
     setDirectionsResponse(results)
+  }
+  
+  async function calculateRouteForAcceptedRide(start, end) {
+    if (start === '' || end === '') { return }
+    const directionsService = new google.maps.DirectionsService()
+    const results = await directionsService.route({
+      origin: start,
+      destination: end,
+      travelMode: google.maps.TravelMode.DRIVING,
+    })
+    setDirectionsResponse_AcceptedRide(results)
   }
 
   function clearRoute() {
@@ -181,6 +195,8 @@ export default function Home() {
         if (payload.eventType == 'UPDATE' && payload.new.is_accepted == true) {
           if (payload.new.is_accepted == true && payload.new.driver_id == currentUser.id) {
             updateRideIsAccepted(payload.new)
+            setAcceptedRide(payload.new)
+            calculateRouteForAcceptedRide(payload.new.pickup_loc, payload.new.drop_loc)
           }
           if (payload.new.is_accepted == true && payload.new.driver_id != currentUser.id) {
             setRideQueue(current => removeIfRideExists([...current], payload.new.id))
@@ -242,7 +258,7 @@ export default function Home() {
           <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
             <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
               {/* <Marker position={center} /> */}
-              {directionsResponse && <DirectionsRenderer directions={directionsResponse} />}
+              {directionsResponse_AcceptedRide && <DirectionsRenderer directions={directionsResponse_AcceptedRide} />}
             </GoogleMap>
           </Box>
         </Box>
