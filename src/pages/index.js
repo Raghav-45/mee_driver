@@ -208,34 +208,59 @@ export default function Home() {
     }
   }, [watchForRealtimeChanges, currentUser])
 
-  const GetDriverName = (props) => {
-    const [userInfo, setUserInfo] = useState(null)
+  // const userCache = []; // Array to store cached user data
+  const [userCache, setUserCache] = useState([])
+  const getRequestedUserInfo = (u) => {
+    return new Promise((resolve, reject) => {
+      // Check if the user data is already cached
+      function cachedDataExists() {
+        if (userCache.length == 0) return { exists: false, index: -1 }
 
-    const getRequestedUserInfo = (u) => {
-      return new Promise((resolve, reject) => {
+        for (var i = 0; i < userCache.length; i++) {
+          if (userCache[i].id == String(u)) {
+            return { exists: true, index: i }
+          }
+        }
+        return { exists: false, index: -1 }
+      }
+      const isDataCached = cachedDataExists()
+
+      console.log('cache ', userCache, 'cache exists ', isDataCached)
+
+      if (isDataCached.exists == true) {
+        console.log("used (cached)", userCache[isDataCached.index]);
+        resolve(userCache[isDataCached.index].username);
+      } else {
         supabase
           .from("profiles")
           .select("username")
           .eq("id", u)
           .single()
-          .then(({ data, error }) => {
+          .then(({ data: { username }, error }) => {
             if (error) {
               reject(error);
             } else {
-              console.log("info", data);
-              resolve(data);
+              console.log("fetched from supabase", username);
+              // userCache.push({ id: String(u), username: username }); // Save the fetched data to cache
+              setUserCache(current => [...current, { id: String(u), username: username }]); // Save the fetched data to cache
+              resolve(username);
             }
           })
           .catch((error) => {
             reject(error);
           });
-      });
-    };
+      }
+    });
+  };
+
+  const GetDriverName = (props) => {
+    const [userInfo, setUserInfo] = useState(null)
 
     useEffect(() => {
       const fetchUserInfo = async () => {
         try {
           const data = await getRequestedUserInfo(props.uuid)
+          // setUserCache(current => [...current, { id: String(props.uuid), username: data }]); // Save the fetched data to cache
           setUserInfo(data)
         } catch (error) {
           console.error(error)
@@ -244,7 +269,7 @@ export default function Home() {
       fetchUserInfo()
     }, [])
 
-    return (userInfo ? userInfo.username : 'Loading user info...')
+    return (userInfo ? userInfo : 'Loading user info...')
   };
 
   if (!isLoaded) {
@@ -254,7 +279,7 @@ export default function Home() {
   return (
     <Box>
       <Box pt={4}>
-        <Box border='2px' borderColor='gray.200' mb={4} position={'relative'} left={0} top={0} h={'200px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
+        <Box border='2px' borderColor='gray.200' mb={4} position={'relative'} left={0} top={0} h={'420px'} w={'100%'} overflow={'hidden'} rounded={'xl'}>
           <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
             <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
               {/* <Marker position={center} /> */}
