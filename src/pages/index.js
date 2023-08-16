@@ -180,6 +180,21 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const updateDriverRoute = async () => {
+      if (geoLoc) {
+        const directionsService = new google.maps.DirectionsService()
+        const results = await directionsService.route({
+          origin: acceptedRide.pickup_loc,
+          destination: geoLoc,
+          travelMode: google.maps.TravelMode.DRIVING,
+        })
+        setDirectionsResponse_AcceptedRide(results)
+      }
+    }
+    acceptedRide && updateDriverRoute()
+  }, [acceptedRide, geoLoc])
+
+  useEffect(() => {
     const subscribe = supabase.channel('any')
       //TODO: i have to add Filter Here
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waiting_rides_test' }, payload => {
@@ -196,7 +211,7 @@ export default function Home() {
           if (payload.new.driver_id == currentUser.id) {
             updateRideIsAccepted(payload.new)
             setAcceptedRide(payload.new)
-            calculateRouteForAcceptedRide(payload.new.pickup_loc, payload.new.drop_loc)
+            // calculateRouteForAcceptedRide(payload.new.pickup_loc, payload.new.drop_loc)
           }
           if (payload.new.driver_id != currentUser.id) {
             setRideQueue(current => removeIfRideExists([...current], payload.new.id))
@@ -283,7 +298,9 @@ export default function Home() {
           <Box position={'absolute'} left={0} top={0} h={'100%'} w={'100%'}>
             <GoogleMap center={center} zoom={17} mapContainerStyle={{width: '100%', height: '100%'}} options={mapOptions}>
               {/* <Marker position={center} /> */}
-              {directionsResponse_AcceptedRide && <DirectionsRenderer directions={directionsResponse_AcceptedRide} />}
+              {acceptedRide && <Marker animation={google.maps.Animation.DROP} icon={{url: '/user_icon.png', scaledSize: new google.maps.Size(50, 50)}} position={acceptedRide.pickup_loc} />}
+              {geoLoc && <Marker animation={google.maps.Animation.DROP} icon={{url: '/driver_icon.png', scaledSize: new google.maps.Size(50, 50)}} position={{ lat: Number(geoLoc.lat), lng: Number(geoLoc.lng) }} />}
+              {directionsResponse_AcceptedRide && <DirectionsRenderer options={{ suppressMarkers: true }} directions={directionsResponse_AcceptedRide} />}
             </GoogleMap>
           </Box>
         </Box>
